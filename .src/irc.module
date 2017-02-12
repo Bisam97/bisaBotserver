@@ -1,0 +1,73 @@
+' Gambas module file
+
+Private Connect As Boolean = False
+
+Public Sub Irc_Twitch_Join(Nick As String, OAuth As String, Channel As String)
+
+  Dim sBuf As String
+
+  Main.MySock.Connect("irc.twitch.tv", 6667)
+
+  Do While (Main.MySock.Status <> 7) And (Main.MySock.Status > 0)
+    Wait 0.1
+  Loop
+
+  If Main.MySock.Status <> 7 Then
+    Print "Error"
+    Quit
+  End If
+
+  sBuf = "PASS " & OAuth & "\n"
+  Write #Main.MySock, sBuf, Len(sBuf)
+  Wait 1
+  sBuf = "NICK " & Nick & "\n"
+  Write #Main.MySock, sBuf, Len(sBuf)
+
+  sBuf = "join #" & Channel & "\n"
+  Write #Main.MySock, sBuf, Len(sBuf)
+  Connect = True
+
+End
+
+Public Sub irc_send_Message(messaga As String, Channel As String)
+
+  Dim sBuffer As String
+
+  If Connect Then
+
+    sBuffer = "PRIVMSG #" & Channel & " :" & messaga & "\n"
+    Write #Main.MySock, sBuffer, Len(sBuffer)
+
+  Endif
+
+End
+
+Public Sub SendNoTO()
+
+  Dim sBuffer As String
+
+  sBuffer = "Test"
+  Write #Main.MySock, sBuffer, Len(sBuffer)
+
+End
+
+Public Sub Close()
+
+  Main.MySock.Close()
+  Connect = False
+
+End
+
+Public Sub Join(Channel As String)
+
+  Dim sBuf As String
+
+  If Connect Then
+
+    sBuf = "join #" & Channel & "\n"
+    Write #Main.MySock, sBuf, Len(sBuf)
+    Connect = True
+
+  Endif
+
+End

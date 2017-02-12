@@ -1,0 +1,21 @@
+# Gambas Project File 3.0
+# Compiled with Gambas 3.9.2
+Title=Bisabot Server
+Startup=Main
+Version=0.0.1
+Component=gb.net
+Component=gb.xml
+Arguments=[["bisam97"]]
+CurrentArgument=1
+TabSize=2
+Language=en_US
+Maintainer=bisam97
+Address=bisam97@bisam97.de
+Url=www.youtube.com/bisam97
+License=General Public License
+PackageName=bisabot_server-0.0.1
+Packager=1
+Systems=autotools,ubuntu
+Menus=ubuntu:"Applications/Network/Communication"
+Categories=ubuntu:"Network"
+Groups=ubuntu:"shells"

@@ -1,0 +1,33 @@
+' Gambas module file
+
+Public Sub saveComand()
+
+  Dim C As Comand
+
+  If Not Exist(User.Home & "/.bisabot") Then Mkdir User.Home & "/.bisabot"
+  If Not Exist(User.Home & "/.bisabot/Comands") Then Mkdir User.Home & "/.bisabot/Comands"
+
+  AllComandtoXML()
+
+End
+
+Private Sub AllComandtoXML()
+
+  Dim xmlFile As New XmlWriter
+  Dim c As Comand
+  Dim a As String[]
+
+  xmlFile.Open(User.Home & "/.bisabot/Comands" & "/" & "botComands" & ".xml", True, "UTF-8")
+  xmlFile.StartElement("Comands")
+  For Each C In GlobalDatas.CammandData
+    a = C.ToString()
+
+    xmlFile.StartElement(Right$(C.ComandName, -1), a)
+    xmlFile.EndElement()
+    Main.Gesamtlog.Print("Comand " & C.ComandName & " was save successful ✔")
+
+  Next
+  xmlFile.EndElement()
+  xmlFile.EndDocument()
+
+End

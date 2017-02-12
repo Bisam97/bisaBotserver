@@ -1,0 +1,32 @@
+' Gambas module file
+
+Public Sub Abfrage(arg As String[])
+
+  Dim k As Comand
+  Dim sBuf As String
+
+  If arg[1] == "add" Then
+
+    'syntax Commands add [ComandName] [Authorization] [Type] [Ausgabe]
+    sBuf = "/Clear"
+    Write #LocalCommandSocket.Client[0], sBuf, Len(sBuf)
+    sBuf = commandAction.argToMsg(arg.Copy(), 4)
+    k = New Comand(arg[2], sBuf, arg[3], arg[4], "")
+
+    GlobalDatas.CammandData.Add(k)
+
+    sBuf = "/Clear"
+    Write #LocalCommandSocket.Client[0], sBuf, Len(sBuf)
+    Wait 0.1
+    sBuf = "The Command " & k.ComandName & " has bean successful addet. ✔"
+    Main.Gesamtlog.Print(sBuf)
+    Write #LocalCommandSocket.Client[0], sBuf, Len(sBuf)
+    Wait 2
+
+  Endif
+
+  If arg[1] == "del" Then
+
+  Endif
+
+End

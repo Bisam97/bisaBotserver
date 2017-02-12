@@ -1,0 +1,22 @@
+' Gambas module file
+
+Public Sub LoadComands()
+
+  Dim xml As New XmlDocument(user.home & "/.bisabot/Comands/botComands.xml")
+  Dim Xmlergebnis As XmlElement[]
+  Dim x As XmlElement
+  Dim c As Comand
+
+  Main.Gesamtlog.Print("Loading Comands...")
+
+  Xmlergebnis = xml.GetElementsByNamespace("Comands")[0].ChildElements
+  For Each x In Xmlergebnis
+
+    c = New Comand(x.Attributes["ComandName"], x.Attributes["Ausgabe"], x.Attributes["Authorization"], CInt(x.Attributes["Type"]), x.Attributes["Syntax"])
+    Main.Gesamtlog.Print("Loading Command " & x.Attributes["ComandName"] & " ✔")
+    GlobalDatas.CammandData.Add(c)
+  Next
+
+  Main.Gesamtlog.Print("Finish Loading Comands ✔")
+
+End

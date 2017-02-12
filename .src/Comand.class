@@ -1,0 +1,98 @@
+' Gambas class file
+
+'- - - - - - - - - - - - - - - - Proberty - - - - - - - - - - - - - - - - -
+Property ComandName As String
+Property Ausgabe As String
+Property Read Template As Template
+Property Read Authorization As String
+
+'- - - - - - - - - - - Veriabeln - - - - - - - - - - - -
+Private $ComandName As String
+Private $Ausgabe As String
+Private $Template As Template
+Private $Authorization As String
+
+Public Sub _new(ComandName As String, Ausgabe As String, Optional Authorization As String, Optional Type As Integer, Optional Syntax As String)
+
+  If InStr(ComandName, "!") = 0 Then ComandName = "!" & ComandName
+  If Syntax = Null Then
+    Select Case Type
+      Case 0
+        Syntax &= "Syntax: " & ComandName
+      Case 1
+        Syntax &= "Syntax: " & ComandName & "$msg"
+      Case 2
+        Syntax &= "Syntax: " & ComandName
+
+    End Select
+  Endif
+  ' If Syntax = Null Then
+  '
+  '   Syntax &= "Syntax: " & ComandName
+  '
+  ' Endif
+  If Authorization = "U" Or Authorization = "M" Or Authorization = "B" Then
+  Else
+    Authorization = "U"
+  Endif
+
+  $Template = New Template(Syntax, Type)
+  $ComandName = ComandName
+  $Ausgabe = Ausgabe
+  $Authorization = Authorization
+
+End
+
+Private Function ComandName_Read() As String
+
+  Return $ComandName
+
+End
+
+Private Sub ComandName_Write(Value As String)
+
+  $ComandName = Value
+
+End
+
+Private Function Ausgabe_Read() As String
+
+  Return $Ausgabe
+
+End
+
+Private Sub Ausgabe_Write(Value As String)
+
+  $Ausgabe = Value
+
+End
+
+Private Function Template_Read() As Template
+
+  Return $Template
+
+End
+
+Private Function Authorization_Read() As String
+
+  Return $Authorization
+
+End
+
+Public Sub ToString() As String[]
+
+  Dim a As New String[]
+
+  a.Add("ComandName")
+  a.Add(Me.ComandName)
+  a.Add("Ausgabe")
+  a.Add(Me.Ausgabe)
+  a.Add("Authorization")
+  a.Add(Me.Authorization)
+  a.Add("Syntax")
+  a.Add(Me.Template.Syntax)
+  a.Add("Type")
+  a.Add(CStr(Me.Template.Type))
+  Return a
+
+End
