@@ -1,3 +1,37 @@
 ' Gambas module file
 
-Public CammandData As New Comand[]
+Public CammandData As New Command[]
+Public ActivViewerList As New Viewer[]
+Public Modlist As New Viewer[]
+Public adder As Integer = 0
+Public AllViewerList As New Viewer[]
+
+Public Sub FindViewerByName(Name As String) As Integer
+
+  Dim v As Viewer
+  Dim i As Integer
+
+  i = 0
+  For Each v In AllViewerList
+
+    If v.userName = Name Then Return i
+    i += 1
+  Next
+
+  Return -1
+
+End
+
+Public Sub AddCleverModsToList(Name As String) As Boolean
+
+  Dim v As Viewer
+
+  For Each v In Modlist
+
+    If v.userName = Name Then Return True
+
+  Next
+
+  Return False
+
+End

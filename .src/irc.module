@@ -36,6 +36,7 @@ Public Sub irc_send_Message(messaga As String, Channel As String)
   If Connect Then
 
     sBuffer = "PRIVMSG #" & Channel & " :" & messaga & "\n"
+    Main.Gesamtlog.Print(sBuffer)
     Write #Main.MySock, sBuffer, Len(sBuffer)
 
   Endif

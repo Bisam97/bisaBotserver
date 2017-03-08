@@ -1,5 +1,5 @@
 # Gambas Project File 3.0
-# Compiled with Gambas 3.9.2
+# Compiled with Gambas 3.9.90
 Title=Bisabot Server
 Startup=Main
 Version=0.0.1
@@ -9,13 +9,16 @@ Arguments=[["bisam97"]]
 CurrentArgument=1
 TabSize=2
 Language=en_US
-Maintainer=bisam97
+Maintainer=Tobias Hopfgarten
+Vendor=Bisam97
+VendorPrefix=B97
 Address=bisam97@bisam97.de
 Url=www.youtube.com/bisam97
 License=General Public License
-PackageName=bisabot_server-0.0.1
+Prefix=1
+PackageName=b97-bisabot_server-0.0.1
 Packager=1
-Systems=autotools,ubuntu
+Systems=autotools
 Menus=ubuntu:"Applications/Network/Communication"
 Categories=ubuntu:"Network"
 Groups=ubuntu:"shells"

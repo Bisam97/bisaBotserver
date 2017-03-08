@@ -1,25 +1,25 @@
 ' Gambas module file
 
-Public Sub abgleich(Comand As String[], Sender As String)
+Public Sub abgleich(Command As String[], Sender As String)
 
-  Dim c As Comand
+  Dim c As Command
   Dim s As String
   Dim arg As String[]
   Dim ausgabe As String
 
-  arg = Comand
+  arg = Command
 
   If GlobalDatas.CammandData.Length > 0 Then
 
     For Each C In GlobalDatas.CammandData
-      If c.ComandName == arg[0] Then
+      If c.CommandName == arg[0] Then
 
         Select Case c.Template.Type
 
           Case 0
             '- - - - - - - - Normal Output - - - - - - - -
 
-            If c.ComandName == arg[0] Then
+            If c.CommandName == arg[0] Then
               irc.irc_send_Message(c.Ausgabe, Main.Kannal)
             Endif
 
@@ -37,7 +37,7 @@ Public Sub abgleich(Comand As String[], Sender As String)
             Next
             irc.irc_send_Message(ausgabe, Main.Kannal)
           Case 2
-            '- - - - - - - - Rmd Comand - - - - - - - -
+            '- - - - - - - - Rmd Command - - - - - - - -
 
             'Rand(0, 100)
             For Each s In Split(C.Ausgabe, " ")

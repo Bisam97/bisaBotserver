@@ -1,0 +1,52 @@
+' Gambas module file
+
+Public Sub saveCommand()
+
+  If Not Exist(User.Home & "/.bisabot") Then Mkdir User.Home & "/.bisabot"
+  If Not Exist(User.Home & "/.bisabot/Commands") Then Mkdir User.Home & "/.bisabot/Commands"
+
+  AllCommandtoXML()
+
+End
+
+Private Sub AllCommandtoXML()
+
+  Dim xmlFile As New XmlWriter
+  Dim c As Command
+  Dim a As String[]
+
+  xmlFile.Open(User.Home & "/.bisabot/Commands" & "/" & "botCommands" & ".xml", True, "UTF-8")
+  xmlFile.StartElement("Commands")
+  For Each C In GlobalDatas.CammandData
+    a = C.ToString()
+
+    xmlFile.StartElement(Right$(C.CommandName, -1), a)
+    xmlFile.EndElement()
+    Main.Gesamtlog.Print("Command " & C.CommandName & " was save successful ✔")
+
+  Next
+  xmlFile.EndElement()
+  xmlFile.Comment("This File was automatically generated from Programm \"BisaBot_server\"")
+  xmlFile.Comment("EoF of this XML File")
+  xmlFile.EndDocument()
+
+End
+
+Public Sub saveViewerStats()
+
+  Dim xmlw As New XmlWriter
+  Dim v As Viewer
+
+  xmlw.Open(User.Home & "/.bisabot/data/user/viewer.xml")
+  xmlw.StartElement("viewer")
+  For Each v In GlobalDatas.AllViewerList
+
+    v.toXml(xmlw)
+
+  Next
+  xmlw.EndElement()
+  xmlw.Comment("This File was automatically generated from Programm \"BisaBot_server\"")
+  xmlw.Comment("EoF of this XML File")
+  xmlw.EndDocument()
+
+End
