@@ -17,7 +17,7 @@ Public Sub Initiieren()
   Endif
 
   Wait 0.1
-  main.GesamtLog.Print("Plase Connect via TCP on this Server to Command The Bot")
+  main.GesamtLog.Print("Please Connect via TCP on this Server to Command The Bot")
 
 End
 
@@ -53,7 +53,7 @@ Public Sub Socket_Read()
   Dim sa As String
   Dim SplitsBuf As String[]
   Dim iInd As Integer
-  Dim k As Comand
+  Dim k As Command
 
   If Last.Status <> Net.Connected Then Return
   Read #Last, sBuf, Lof(Last)
@@ -63,7 +63,7 @@ Public Sub Socket_Read()
 
   If sBuf = "START" Then
     main.GesamtLog.Print("Startig IRC Socket With Twitch Chat")
-    Main.Button2_Click()
+    Main.TwitchJoin()
   Endif
 
   If SplitsBuf[0] == "Command" Then
@@ -110,11 +110,12 @@ Public Sub Socket_Read()
 
   Last.Tag[1] = 0
   Last.Tag[2] = sBuf
-Catch
 
-  SBuf = "The Commands for Conntroll the Bot a : \n START -- Connect the Bot on the Twitch Chat. \n STOP -- Stop the Bot and Close the Programm. \n JOIN [Channal_Name] -- Leave the Currend Channel and Switch too the aver. \n TC [Chat_Message] -- Send a Message via the Bot to the Twitch Chat.\n HELP -- to see this Message"
-  If Server.Status = Net.Connected Then
-    Write #Last, sBuf, Len(sBuf)
-  Endif
+Catch
+  main.Gesamtlog.addError(Error.Text & " in " & Error.Where)
+  ' SBuf = "The Commands for Conntroll the Bot a : \n START -- Connect the Bot on the Twitch Chat. \n STOP -- Stop the Bot and Close the Programm. \n JOIN [Channal_Name] -- Leave the Currend Channel and Switch too the aver. \n TC [Chat_Message] -- Send a Message via the Bot to the Twitch Chat.\n HELP -- to see this Message"
+  ' If Server.Status = Net.Connected Then
+  '   Write #Last, sBuf, Len(sBuf)
+  ' Endif
 
 End

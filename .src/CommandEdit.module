@@ -2,30 +2,57 @@
 
 Public Sub Abfrage(arg As String[])
 
-  Dim k As Comand
+  Dim k As Command
+  Dim b As Boolean
   Dim sBuf As String
 
   If arg[1] == "add" Then
 
-    'syntax Commands add [ComandName] [Authorization] [Type] [Ausgabe]
+    'syntax Command add [CommandName] [Authorization] [Type] [Ausgabe]
     sBuf = "/Clear"
     Write #LocalCommandSocket.Client[0], sBuf, Len(sBuf)
     sBuf = commandAction.argToMsg(arg.Copy(), 4)
-    k = New Comand(arg[2], sBuf, arg[3], arg[4], "")
+    k = New Command(arg[2], sBuf, arg[3], arg[4], "")
 
     GlobalDatas.CammandData.Add(k)
 
     sBuf = "/Clear"
     Write #LocalCommandSocket.Client[0], sBuf, Len(sBuf)
     Wait 0.1
-    sBuf = "The Command " & k.ComandName & " has bean successful addet. ✔"
+    sBuf = "The Command " & k.CommandName & " has bean successful addet. ✔"
     Main.Gesamtlog.Print(sBuf)
     Write #LocalCommandSocket.Client[0], sBuf, Len(sBuf)
+    botShutdown.saveCommand()
     Wait 2
 
   Endif
 
   If arg[1] == "del" Then
+
+    'syntax Command del [CommandName]
+
+    For Each k In GlobalDatas.CammandData
+      If Right(k.CommandName, -1) == arg[2] Then
+        b = True
+
+        Break
+      Endif
+    Next
+    If b Then
+      GlobalDatas.CammandData.Delete(GlobalDatas.CammandData.Find(k))
+      sBuf = "The Command " & k.CommandName & " has bean successful removet. ✔"
+      Main.Gesamtlog.Print(sBuf)
+      Write #LocalCommandSocket.Client[0], sBuf, Len(sBuf)
+      botShutdown.saveCommand()
+    Else
+      sBuf = "This Command is not registert in the Bot"
+      Main.Gesamtlog.Print(sBuf)
+      Write #LocalCommandSocket.Client[0], sBuf, Len(sBuf)
+      Wait 2
+    Endif
+  Endif
+
+  If arg[1] == "edit" Then
 
   Endif
 

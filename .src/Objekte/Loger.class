@@ -3,23 +3,23 @@
 '- - - - - - - - - - - - - - - - Proberty - - - - - - - - - - - - - - - - -
 Property logfile As File
 Property ID As String
+Property Read Path As String
+
 '- - - - - - - - - - - Veriabeln - - - - - - - - - - - -
 Private $logfile As File
 Private $ID As String
 Private $ERROR As String[]
+Private $Path As String
 
-Public Sub _new()
+Public Sub _new(DirPath As String)
 
   Me.ID = CString(Day(Now) & Month(Now) & Year(Now) & Hour(Now) & Minute(Now))
-  If Not Exist(User.Home & "/logs") Then
-    Mkdir User.Home & "/logs"
-  Endif
-  If Not Exist(User.Home & "/logs/Bisabot") Then
-    Mkdir User.Home & "/logs/Bisabot"
-  Endif
 
-  Me.logfile = Open User.Home & "/logs/Bisabot/All" & Me.ID & ".log" For Write Create
+  $Path = DirPath & "/" & Me.ID & ".log"
+
+  Me.logfile = Open Me.Path For Write Create
   Me.logfile.Close()
+  Me.Print("-----------------------------------Start-Log-------------------------------------------")
   $ERROR = New String[]
 
 End
@@ -52,7 +52,7 @@ Public Sub Print(msg As String)
 
   Print msg
   msg &= "\r\n"
-  Me.logfile = Open User.Home & "/logs/Bisabot/All" & Me.ID & ".log" For Read Write Append
+  Me.logfile = Open Me.Path For Read Write Append
   Write #Me.logfile, msg, String.Len(msg)
   Me.logfile.Close()
   Me.logfile = Null
@@ -62,19 +62,30 @@ End
 Public Sub addError(msg As String)
 
   $ERROR.Add(CStr(Hour(Now) & ":" & Minute(Now) & " ") & msg)
-  Me.Print("----------ERROR-------------\n 1 Error was addet to the Error log at the End of this File wen this Programm Close\n This is Error " & CString($ERROR.Length) & " -------------ERROR-END---------------")
+  Me.Print("----------ERROR-------------\n 1 Error was addet to the Error log at the End of this File wen this Programm Close\n This is Error " & CString($ERROR.Length) & "\n-------------ERROR-END---------------")
 
 End
 
 Public Sub ErrorPrinter()
 
   Dim s As String
+  Dim i As Integer = 1
 
+  Me.Print("\n\n---------------------------------Normal-Log-End----------------------------------------")
   Me.Print("\n \n \n")
   Me.Print("-----------------------------------Error-Log-------------------------------------------")
 
   For Each s In $ERROR
-    Print("\n" & s & "\n")
+    Print("\n" & CStr(i) & ":   " & s & "\n")
+    i += 1
   Next
+
+  Me.Print("------------------------------------End-Log--------------------------------------------")
+
+End
+
+Private Function Path_Read() As String
+
+  Return $Path
 
 End

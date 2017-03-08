@@ -4,10 +4,10 @@
 Public MySock As New Socket As "Chat"
 Public Songrequestlist As New Songrequest[]
 Public Kannal As String = "bisam97"
-Public Gesamtlog As New Loger
+Public Gesamtlog As Loger
 '- - - - - - - - - - - - - - - - - - Privat var - - - - - - - - - - - - -
 
-Private OAuth As String = ""
+Private OAuth As String
 Private Nick As String = "bisasambot"
 Private NameText As New String[]
 Private Gifeway As New String[]
@@ -21,9 +21,14 @@ Private sr As New Timer(1000)
 Private sraktivator As New Timer(100)
 Private Timer1 As New Timer(1000)
 Private YtKey As String
+Private SongCloutKey As String
 
 Public Sub Main()
 
+  botStartUp.CreateDirs()
+
+  Gesamtlog = New Loger(User.Home & "/.bisabot/logs")
+  Gesamtlog.Print("All directories that are used in " & User.Home & "/.bisabot")
   Gesamtlog.Print("Starting")
 
   If Args.Count <> 2 Then
@@ -32,13 +37,16 @@ Public Sub Main()
     Quit
   Else
     Gesamtlog.Print("Starting Phase 1")
-    botStartUp.LoadComands()
+    botStartUp.LoadCommands()
+    botStartUp.LoadViwerlist()
     Kannal = Args[1]
     Gesamtlog.Print("Loadig API Keys")
-    YtKey = File.Load(user.home & "/.bisabot/GoogleAPIKey")
-    OAuth = File.Load(user.home & "/.bisabot/twitchAPIkey")
-
+    YtKey = File.Load(botStartUp.LoadApis("http://bisam97.de/APIKeys/GoogleAPIKey"))
+    OAuth = File.Load(botStartUp.LoadApis("http://bisam97.de/APIKeys/twitchAPIkey"))
+    Shell "rm /tmp/Bisambot/api" Wait
     LocalCommandSocket.Initiieren()
+
+    Gesamtlog.Print("Bot initation was successful")
 
     Form_Open()
 
@@ -49,8 +57,12 @@ Public Sub Main()
 
 End
 
-Public Sub Button2_Click()
+Public Sub TwitchJoin()
 
+  Gesamtlog.Print("Load Viewer....")
+  botStartUp.loadViewers(Kannal)
+  PointsHours.enabelTimer()
+  Gesamtlog.Print("Viewer was Loaded successful")
   Timer1.Enabled = True
   Timer1.Start
   irc.Irc_Twitch_Join(nick, OAuth, Kannal)
@@ -83,6 +95,12 @@ Public Sub Chat_Read()
   Sender = Split(stmop, ":")[0]
   Command = Split(ssend, " ")
 
+  '- - - - - - - - - - Ash TOen - - - - - - - - - - -
+  If Command[0] == "!ash" And If LCase(Sender) = LCase$("ash_ketchum34") Then
+
+    irc.irc_send_Message("/timeout ash_ketchum34 6", Kannal) ' .timeout 600 ash_ketchum34
+
+  Endif
   '- - - - - - - - - - - - - - - - - - - - - Giveway - - - - - - - - - - - - - - - - - - -
 
   ' If gifeHashtake.ReadOnly Then
@@ -134,11 +152,12 @@ End
 
 Public Sub Button7_Click()
 
-  Dim C As Comand
+  Dim C As Command
 
   ButtenPress = True
   Timer1.Stop
-  botShutdown.saveComand()
+  botShutdown.saveCommand()
+  botShutdown.saveViewerStats()
   Wait 1
   Sav_SR()
   MySock.Close
@@ -188,10 +207,6 @@ Public Sub Form_Open()
 
   ButtenPress = False
   'YTID = "-ShXz0qKdAw"
-  If Not Exist("/tmp/Bisambot") Then
-    Gesamtlog.Print("-Creatig Temp Directory")
-    Mkdir "/tmp/Bisambot"
-  Endif
 
   '   WebView1.HTML = "<iframe width='300' height='163' src='https://www.youtube.com/embed/" & YTID & "?autoplay=1&rel=0&amp;vq=mobile' frameborder='0' allowfullscreen></iframe>"
 
@@ -256,19 +271,13 @@ Private Sub Msongrequest(I As String[], Sender As String)
     Gesamtlog.Print(YTID)
 
     File.Save("/tmp/Bisambot/YTTimer.txt", "")
-    Shell "curl --output '/tmp/Bisambot/YTTimer.txt' 'https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=" & YTID & "&key='" & YtKey
-    While "" = File.Load("/tmp/Bisambot/YTTimer.txt")
-      Wait 0.1
-    Wend
+    Shell "curl --output '/tmp/Bisambot/YTTimer.txt' 'https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id=" & YTID & "&key='" & YtKey Wait
 
     YTTimera = Split(File.Load("/tmp/Bisambot/YTTimer.txt"), "\n:\" ", Null, True)
     YTTimerzeit = Split(YTTimera[YTTimera.Find("duration") + 1], "PTHMS", "*", True)
 
     File.Save("/tmp/Bisambot/YTTimer.txt", "")
-    Shell "curl --output '/tmp/Bisambot/YTTimer.txt' 'https://www.googleapis.com/youtube/v3/videos?id=" & YTID & "&key=AIzaSyDMFKfGbfrPgppcoq_6mwVg-X-mHRQxJFI&fields=items(id,snippet(channelId,title,categoryId),statistics)&part=snippet,statistics'"
-    While "" = File.Load("/tmp/Bisambot/YTTimer.txt")
-      Wait 0.1
-    Wend
+    Shell "curl --output '/tmp/Bisambot/YTTimer.txt' 'https://www.googleapis.com/youtube/v3/videos?id=" & YTID & "&key=AIzaSyDMFKfGbfrPgppcoq_6mwVg-X-mHRQxJFI&fields=items(id,snippet(channelId,title,categoryId),statistics)&part=snippet,statistics'" Wait
 
     YTTimera = Split(File.Load("/tmp/Bisambot/YTTimer.txt"), "\n:\"", Null, True)
     Title = YTTimera[YTTimera.Find("title") + 2]
