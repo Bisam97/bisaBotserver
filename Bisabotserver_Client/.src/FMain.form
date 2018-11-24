@@ -1,0 +1,64 @@
+# Gambas Form File 3.0
+
+{ Form Form
+  MoveScaled(0,0,64,64)
+  { sockMsg TextLabel
+    MoveScaled(2,20,42,6)
+    Font = Font["Bold"]
+    Alignment = Align.Center
+    Border = Border.Sunken
+  }
+  { textSend TextArea
+    MoveScaled(2,27,42,9)
+  }
+  { textHost TextBox
+    MoveScaled(8,3,23,4)
+    Text = ("localhost")
+  }
+  { textPort TextBox
+    MoveScaled(8,9,23,4)
+    Text = ("10469")
+  }
+  { butConnect Button
+    MoveScaled(33,3,16,4)
+    Text = ("Connect")
+  }
+  { butClose Button
+    MoveScaled(33,9,16,4)
+    Text = ("Close")
+  }
+  { Label1 Label
+    MoveScaled(2,3,6,4)
+    Text = ("Host:")
+  }
+  { Label2 Label
+    MoveScaled(2,9,6,4)
+    Text = ("Port:")
+  }
+  { butStart Button
+    MoveScaled(46,20,16,4)
+    Text = ("Start and Join")
+  }
+  { butStop Button
+    MoveScaled(46,25,16,4)
+    Text = ("Stop and Leave")
+  }
+  { butSkip Button
+    MoveScaled(46,30,16,4)
+    Text = ("Song Skip")
+  }
+  { butSend Button
+    MoveScaled(46,35,16,4)
+    Text = ("Send Text")
+  }
+  { textReceive TextArea
+    MoveScaled(2,43,60,16)
+    ReadOnly = True
+  }
+  { MySocket #Socket
+    #MoveScaled(52,2)
+  }
+  { timTimeout #Timer
+    #MoveScaled(52,8)
+  }
+}

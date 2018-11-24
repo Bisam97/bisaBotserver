@@ -1,0 +1,418 @@
+' Gambas module file
+
+'- - - - - - - - - - - - - - - - - - Public Var - - - - - - - - - - - - -
+Public MySock As New Socket As "Chat"
+Public Kannal As String = "bisam97"
+Public Gesamtlog As Loger
+'- - - - - - - - - - - - - - -CommunicateServer - - - - - - - - - - - - -
+Public ServerCCP As ServerSocket
+Public ServerDB As ServerSocket
+Public ServerLCP As ServerSocket
+Public ServerAE As ServerSocket
+Public ServerIRC As ServerSocket
+
+Public IrcClient As Socket
+Public LcpClient As Socket
+Public DbClient As Socket
+Public CcpClient As Socket
+
+Private IrcCore As Process
+Private LCPCore As Process
+Private DBCore As Process
+Private CCPCore As Process
+'- - - - - - - - - - - - - - - Shutdown-Bools- - - - - - - - - - - - - - -
+Private shutdownIrc As Boolean = False
+
+'- - - - - - - - - - - - - - - - - - Privat var - - - - - - - - - - - - -
+Private Clientlist As New Socket[]
+Private OAuth As String
+Private Nick As String = "bisasambot"
+Private NameText As New String[]
+Private Gifeway As New String[]
+Private YTIDList As New String[]
+Private Songrequestrowlist As New String[][]
+Private YTTimera As New String[]
+Private YTTimerzeit As New String[]
+Private ButtenPress As Boolean
+Private sr As New Timer(1000)
+Private sraktivator As New Timer(100)
+Private Timer1 As New Timer(1000)
+Private YtKey As String
+Private SongCloutKey As String
+Private RemoteServer As New ServerSocket As "RemoteServer"
+Public Client As New Socket[]
+Private $iId As Integer
+Public buffer As String[]
+Private notShutdown As Boolean = True
+Private isnotinChat As Boolean = True
+Private Debugi As Boolean = False
+
+Public Sub Main()
+
+  ' Bisacrypt.GenKeys("AES-128-CBC")
+  ' Quit
+  botStartUp.CreateDirs()
+  Gesamtlog = New Loger(User.Home & "/.bisabot/logs")
+  Gesamtlog.Print("All directories that are used in " & User.Home & "/.bisabot")
+  Gesamtlog.Print("Starting")
+
+  If Args.Count <> 2 Then
+
+    Gesamtlog.Print("Error Please Tipe: " & Application.Name & " [Twitch Channel]")
+    Quit
+  Else
+    Gesamtlog.Print("Starting Phase 1")
+    botStartUp.LoadConfig()
+    botStartUp.OpenLocalCommunicateServer()
+    Kannal = Args[1]
+    Gesamtlog.Print("Loadig API Keys")
+    If GlobalDatas.botName = "#default" Or If GlobalDatas.botOauth = "#default" Then
+      YtKey = File.Load(botStartUp.LoadApis("http://bisam97.de/APIKeys/GoogleAPIKey"))
+      OAuth = File.Load(botStartUp.LoadApis("http://bisam97.de/APIKeys/twitchAPIkey"))
+
+      If GlobalDatas.botOauth == "#default" And If GlobalDatas.botName == "#default" Then
+      Else
+
+        Gesamtlog.Print("!Please add a Oauth in the Config file per Client and restart the bot!")
+        Gesamtlog.Print("the bot use the normal Connfiguration Name = \"bisasambot\" and the normal Oauth")
+
+        Gesamtlog.addError("!Please add a Oauth in the Config file per Client and restart the bot!")
+
+      Endif
+    Else
+
+    Endif
+
+    Shell "rm /tmp/Bisambot/api" Wait
+
+    initCoreSever()
+    Wait 3
+    ''========================Startup Cores======================================================================
+    buffer = ["BisabotServerIrcCore.gambas", "-p", Application.Id, "-i", Gesamtlog.ID, "-c", Kannal]
+    IrcCore = Exec buffer For Read As "Core"
+    IrcCore.Tag = "IRC"
+
+    buffer = ["BisabotServerLocalCommandProveider.gambas", "-p", Application.id, "-i", Gesamtlog.ID]
+    LCPCore = Exec buffer For Read As "Core"
+    LCPCore.Tag = "LCP"
+
+    buffer = ["BisabotServerChatCommandProveider.gambas", "-p", Application.Id, "-i", Gesamtlog.ID, "-u", Kannal]
+    CCPCore = Exec buffer For Read As "Core"
+    CCPCore.Tag = "CCP"
+
+    buffer = ["BisabotServerDataBaseCore.gambas", "-p", Application.Id, "-i", Gesamtlog.ID, "-c", Kannal]
+    DBCore = Exec buffer For Read As "Core"
+    DBCore.Tag = "DB"
+    'RemoteServer_Initiieren()
+
+    Gesamtlog.Print("Bot initation was successful")
+
+  Endif
+
+End
+
+Public Sub Core_Kill()
+
+  If notShutdown Then Gesamtlog.Print("!!!!!!" & Last.Tag & " CORE CRASH!!!!!!")
+  If notShutdown Then Shutdown()
+
+End
+
+Public Sub initCoreSever()
+
+  ServerIRC = New ServerSocket As "IRC"
+  With ServerIRC
+    .Type = Net.Local
+    .Path = "/tmp/" & Application.Id & "/irc"
+  End With
+  ServerIRC.Listen
+
+  ServerLCP = New ServerSocket As "LCP"
+  With ServerLCP
+    .Type = Net.Local
+    .Path = "/tmp/" & Application.Id & "/lcp"
+  End With
+  ServerLCP.Listen
+
+  ServerDB = New ServerSocket As "DB"
+  With ServerDB
+    .Type = Net.Local
+    .Path = "/tmp/" & Application.Id & "/db"
+  End With
+  ServerDB.Listen
+
+  ServerCCP = New ServerSocket As "CCP"
+  With ServerCCP
+    .Type = Net.Local
+    .Path = "/tmp/" & Application.Id & "/ccp"
+  End With
+  ServerCCP.Listen
+
+End
+
+Public Sub Irc_Connection(RemoteHostIP As String)
+
+  IrcClient = ServerIRC.Accept()
+  IrcClient.Tag = ["irc"]
+  Clientlist.Add(IrcClient)
+  Write #IrcClient, "-n bisabot\n", Len("-n bisabot\n")
+  Wait 0.1
+  Write #IrcClient, "-t " & OAuth, Len("-t " & OAuth)
+  Wait 0.1
+
+End
+
+Public Sub LCP_Connection(RemoteHostIP As String)
+
+  LcpClient = ServerLCP.Accept()
+  LcpClient.Tag = ["lcp"]
+  Clientlist.Add(LcpClient)
+
+End
+
+Public Sub DB_Connection(RemoteHostIP As String)
+
+  DbClient = ServerDB.Accept()
+  DbClient.Tag = ["db"]
+  Clientlist.Add(dbClient)
+
+End
+
+Public Sub CCP_Connection(RemoteHostIP As String)
+
+  CcpClient = ServerCCP.Accept()
+  CcpClient.Tag = ["ccp"]
+  Clientlist.Add(CcpClient)
+
+End
+
+Public Sub RemoteServer_Initiieren()
+
+  RemoteServer.Type = Net.Internet
+  RemoteServer.Port = 10469
+  RemoteServer.Listen(1)
+  If RemoteServer.Status = Net.Active And RemoteServer.Type = Net.Internet Then
+    main.GesamtLog.Print("Tcp Command Server Starting At Port 10469")
+  Endif
+
+  Wait 0.1
+  main.GesamtLog.Print("Please Connect via TCP on this Server to Command The Bot")
+
+End
+
+Public Sub RemoteServer_Connection(RemoteHostIP As String)
+
+  Dim Obj As Socket
+  Dim SBuf As String
+
+  Gesamtlog.Print("=>" & RemoteHostIP & " Accept")
+
+  If RemoteServer.Status <= Net.Inactive Then Return
+
+  Obj = RemoteServer.Accept()
+  Obj.Blocking = False
+  Inc $iId
+
+  Obj.Tag = ["RemoteClient"]
+  Client.Clear()
+  Client.Add(Obj)
+  main.GesamtLog.Print("Socket " & Obj.Tag[0] & " Accept")
+  SBuf = "Hello on the Bisabot Server on Version " & Application.Version & "!\n The Commans come In a few seconds."
+  senddata(Obj, SBuf)
+  Wait 2
+  senddata(Obj, "/Clear")
+
+  Wait 0.1
+
+  senddata(Obj, "The Commands for Conntroll the Bot a :")
+  Wait 0.1
+  senddata(Obj, " START -- Connect the Bot on the Twitch Chat.")
+  Wait 0.1
+  senddata(Obj, " STOP -- Stop the Bot and Close the Programm.")
+  Wait 0.1
+  senddata(Obj, " JOIN [Channal_Name] -- Leave the Currend Channel and Switch too the aver.")
+  Wait 0.1
+  senddata(Obj, "TC [Chat_Message] -- Send a Message via the Bot to the Twitch Chat.")
+  Wait 0.1
+  senddata(Obj, " HELP -- to see this Message")
+
+End
+
+Public Sub senddata(Client As Socket, txt As String)
+
+  Dim Ip As String = Client.RemoteHost
+
+  Time
+  main.Gesamtlog.Print("[" & Time & "] Server --> " & IP & "  " & txt)
+  txt = txt & "\n"
+  Try Write #Client, txt, Len(txt)
+
+End
+
+Public Sub Shutdown()
+
+  Dim i As Integer
+
+  notShutdown = False
+
+  SendToAllInClientlist("exit")
+
+  i = 0
+  While IrcCore.State
+    Print i
+    If IrcCore.State = 2 Then Break
+    Wait 1
+    i += 1
+
+    If i = 30 Then IrcCore.Kill()
+  Wend
+  i = 0
+  While LCPCore.State
+    Print i
+    If LCPCore.State = 2 Then Break
+    Wait 1
+    i += 1
+
+    If i = 30 Then LCPCore.Kill()
+  Wend
+  ServerLCP.Close()
+
+  Exec ["rm", "-r", "/tmp/" & Application.Id]
+  Gesamtlog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub IRC_Error()
+
+  Gesamtlog.addError(Error.Text)
+
+End
+
+Public Sub SendToAllInClientlist(msg As String)
+
+  Dim c As Socket
+
+  msg &= "\n"
+  For Each c In Clientlist
+    c.Begin()
+    Write #c, msg, Len(msg)
+    Try c.Send()
+  Next
+
+End
+
+Public Sub Socket_Read()
+
+  Dim s As String
+  Dim sock As Socket
+  Dim u As String[]
+
+  sock = Last
+  s = ""
+  Read #Sock, s, Lof(sock)
+
+  Gesamtlog.Print("[" & Time & "] " & sock.Tag[0] & " --> " & s)
+  u = Split(s, " \n")
+  If s = Null Then u = [" ", " ", " ", " ", " "]
+  Select sock.Tag[0]
+
+    Case "RemoteClient"
+      Select s
+        Case "DebugLoadCCP"
+          Send("load", "ccp")
+          Gesamtlog.Print(gb.Tab & "====RELOAD=CCP-CORE====")
+        Case "DebugALLSD"
+          Gesamtlog.Print(gb.Tab & "====SHUTDOWN====")
+          Shutdown()
+
+        Case "Debug"
+          notShutdown = False
+          Debugi = True
+          isnotinChat = True
+          Print "=======PID===" & Application.Id & "==============="
+          Gesamtlog.Print(gb.Tab & "====LOAD=DEBUG=OPTIONS====")
+          Gesamtlog.Print("[!!!]" & gb.Tab & "WARNING--SAVE--OPTION--'isnotinChat'--IS--DISABLED [!!!]")
+        Case "DebugSDDB"
+          If Debugi = True Then
+            Send("exit", "db")
+            Gesamtlog.Print(gb.tab & "====SHUTDOWN=DB-CORE====")
+          Endif
+        Case "DebugSDIRC"
+          If Debugi = True Then
+            Send("exit", "irc")
+            Gesamtlog.Print(gb.tab & "====SHUTDOWN=IRC-CORE====")
+          Endif
+        Case "DebugSDCCP"
+          If Debugi = True Then
+            Send("exit", "ccp")
+            Gesamtlog.Print(gb.tab & "====SHUTDOWN=CCP-CORE====")
+          Endif
+      End Select
+      senddata(LcpClient, "-cmd " & s)
+      Wait 0.1
+      ''========================IRC================================
+    Case "irc"
+      Select u[0]
+        Case "-input"
+          Send("-cmd " & s, "ccp")
+      End Select
+      ''========================LCP================================
+    Case "lcp"
+      Select u[0]
+        Case "-start"
+          If isnotinChat Then senddata(IrcClient, "-s")
+          If Debugi = False Then isnotinChat = False
+        Case "-say"
+          Send(s, "irc")
+        Case "exit"
+          Shutdown()
+      End Select
+      ''========================CCP================================
+    Case "ccp"
+      Select u[0]
+        Case "finishedLoading"
+          RemoteServer_Initiieren()
+        Case "IrcSay"
+          Send("-say " & Split(s, " \n")[1], "irc")
+      End Select
+      ''=========================DB================================
+    Case "db"
+      Select u[0]
+        Case "-loadCCP"
+          Send("load", "ccp")
+
+      End Select
+  End Select
+
+End
+
+Public Sub Send(data As String, ClientTag As String)
+
+  Dim s As Socket
+
+  For Each s In Clientlist
+    If s.Tag[0] = ClientTag Then
+      s.Begin()
+      Write #s, data & gb.NewLine, Len(data & gb.NewLine)
+      Gesamtlog.Print("[" & Time & "] " & "Server --> " & s.Tag[0] & "   " & data)
+      s.Send()
+
+      Wait 0.1
+
+    Endif
+  Next
+Catch
+  Print Error.Text & gb.tab & Error.Backtrace[0]
+
+End
+
+Public Sub Socket_Closed()
+
+  Dim s As Socket
+
+  For Each s In Clientlist
+    If s.Tag[0] = Last.Tag[0] Then Clientlist.Remove(Clientlist.Find(s))
+  Next
+
+End

@@ -1,0 +1,14 @@
+# Gambas Project File 3.0
+# Compiled with Gambas 3.9.90
+Title=Bisabot Client
+Startup=FMain
+Version=0.0.1
+Component=gb.image
+Component=gb.gui
+Component=gb.form
+Component=gb.net
+Component=gb.openssl
+TabSize=2
+Translate=1
+Language=en_US
+Packager=1

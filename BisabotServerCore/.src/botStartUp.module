@@ -1,0 +1,229 @@
+' Gambas module file
+
+Public Sub CreateDirs()
+
+  Dim home As String
+
+  home = User.Home & "/.bisabot"
+  If Not Exist("/tmp/Bisambot") Then Mkdir "/tmp/Bisambot"
+  If Not Exist(home) Then Mkdir home
+  If Not Exist(home & "/data") Then Mkdir home & "/data"
+  If Not Exist(home & "/data/user") Then Mkdir home & "/data/user"
+  If Not Exist(home & "/Commands") Then Mkdir home & "/Commands"
+  If Not Exist(home & "/logs") Then Mkdir home & "/logs"
+  If Not Exist(User.Home & "/.bisacrypt") Then Mkdir User.Home & "/.bisacrypt"
+  If Not Exist("/tmp/" & Application.Id) Then Mkdir "/tmp/" & Application.Id
+
+End
+
+Public Sub LoadConfig()
+
+  Dim xml As New XmlDocument
+  Dim Xmlergebnis As XmlElement[]
+  Dim x As XmlElement
+
+  If Exist(User.Home & "/.bisabot/data/config.xml") Then
+    xml.Open(User.Home & "/.bisabot/data/config.xml")
+    Main.Gesamtlog.Print("Loading Config...")
+
+    x = xml.GetElementsByNamespace("config")[0].ChildElements[0]
+    GlobalDatas.botOauth = x.Attributes["botOauth"]
+    GlobalDatas.botName = x.Attributes["botName"]
+    GlobalDatas.Login = x.Attributes["Login"]
+    GlobalDatas.pw = x.Attributes["pw"]
+    GlobalDatas.adder = CInt(x.Attributes["Pointsadder"])
+    Main.Gesamtlog.Print("Loading Config Compledet ✔")
+  Else
+    Main.Gesamtlog.Print("Create Config...")
+    botShutdown.saveConfig()
+    Main.Gesamtlog.Print("Config Createt ✔")
+    LoadConfig()
+  Endif
+
+End
+
+Public Sub LoadApis(Pfad As String) As String
+
+  Shell "wget -q --output-document=/tmp/Bisambot/api --http-user=Twitchchatb" & Application.Version & "otbisabot --http-password=HalloIchBinDerBotDerAPIsBraucht " & Pfad Wait
+
+  Return "/tmp/Bisambot/api"
+
+End
+
+Public Sub OpenLocalCommunicateServer()
+
+End
+
+' Public Sub LoadCommands()
+'
+'   Dim xml As New XmlDocument
+'   Dim Xmlergebnis As XmlElement[]
+'   Dim x As XmlElement
+'   Dim c As Command
+'
+'   If Not Exist(user.home & "/.bisabot/Commands/botCommands.xml") Then botShutdown.saveCommand()
+'   xml.Open(user.home & "/.bisabot/Commands/botCommands.xml")
+'   Main.Gesamtlog.Print("Loading Commands...")
+'
+'   Xmlergebnis = xml.GetElementsByNamespace("Commands")[0].ChildElements
+'   For Each x In Xmlergebnis
+'
+'     c = New Command(x.Attributes["CommandName"], x.Attributes["Ausgabe"], x.Attributes["Authorization"], CInt(x.Attributes["Type"]), x.Attributes["Syntax"])
+'     Main.Gesamtlog.Print("Loading Command " & x.Attributes["CommandName"] & " ✔")
+'     GlobalDatas.CammandData.Add(c)
+'
+'   Next
+'
+'   Main.Gesamtlog.Print("Finish Loading Commands ✔")
+'
+' End
+'
+' Public Sub LoadApis(Pfad As String) As String
+'
+'   Shell "wget -q --output-document=/tmp/Bisambot/api --http-user=Twitchchatb" & Application.Version & "otbisabot --http-password=HalloIchBinDerBotDerAPIsBraucht " & Pfad Wait
+'
+'   Return "/tmp/Bisambot/api"
+'
+' End
+'
+' Public Sub loadViewers(Channel As String)
+'
+'   Dim a As Viewer[]
+'
+'   Shell "wget -q --output-document=/tmp/Bisambot/viewer http://tmi.twitch.tv/group/user/" & Channel & "/chatters" Wait
+'   sortViewers()
+'   Print "true"
+'
+' End
+'
+' Private Sub sortViewers()
+'
+'   Dim sBuf As String
+'   Dim sa As String[]
+'   Dim a As Viewer[]
+'   Dim split As String
+'   Dim v As Viewer
+'   Dim i As Integer
+'   Dim k As Integer
+'   Dim m As Integer
+'
+'   split = "{ " & String.Chr(34) & gb.NewLine & ":}[],"
+'
+'   GlobalDatas.ActivViewerList.Clear()
+'
+'   sBuf = File.Load("/tmp/Bisambot/viewer")
+'   sa = Split(sBuf, split, "", True)
+'   Print sa
+'
+'   k = sa.Find("moderators") + 1
+'   m = sa.Find("staff") - 1
+'
+'   If sa.Find("moderators") + 1 Not sa.Find("staff") - 1 Then
+'     For i = k To m Step 1
+'
+'       If -1 = GlobalDatas.FindViewerByName(sa[i]) Then
+'         v = New Viewer(sa[i], True, 0, 0)
+'         GlobalDatas.AllViewerList.Add(v)
+'       Else
+'         v = GlobalDatas.AllViewerList[GlobalDatas.FindViewerByName(sa[i])]
+'       Endif
+'       If Not GlobalDatas.AddCleverModsToList(sa[i]) Then GlobalDatas.Modlist.Add(v)
+'       GlobalDatas.ActivViewerList.Add(v)
+'     Next
+'   Endif
+'
+'   k = sa.Find("staff") + 1
+'   m = sa.Find("admins") - 1
+'
+'   If sa.Find("staff") + 1 Not sa.Find("admins") - 1 Then
+'     For i = k To m Step 1
+'
+'       If -1 = GlobalDatas.FindViewerByName(sa[i]) Then
+'         v = New Viewer(sa[i], True, 0, 0)
+'         GlobalDatas.AllViewerList.Add(v)
+'       Else
+'         v = GlobalDatas.AllViewerList[GlobalDatas.FindViewerByName(sa[i])]
+'       Endif
+'       If Not GlobalDatas.AddCleverModsToList(sa[i]) Then GlobalDatas.Modlist.Add(v)
+'       GlobalDatas.ActivViewerList.Add(v)
+'     Next
+'   Endif
+'
+'   k = sa.Find("admins") + 1
+'   m = sa.Find("global_mods") - 1
+'
+'   If sa.Find("admins") + 1 Not sa.Find("global_mods") - 1 Then
+'     For i = k To m Step 1
+'
+'       If -1 = GlobalDatas.FindViewerByName(sa[i]) Then
+'         v = New Viewer(sa[i], True, 0, 0)
+'         GlobalDatas.AllViewerList.Add(v)
+'       Else
+'         v = GlobalDatas.AllViewerList[GlobalDatas.FindViewerByName(sa[i])]
+'       Endif
+'       If Not GlobalDatas.AddCleverModsToList(sa[i]) Then GlobalDatas.Modlist.Add(v)
+'       GlobalDatas.ActivViewerList.Add(v)
+'     Next
+'   Endif
+'
+'   k = sa.Find("global_mods") + 1
+'   m = sa.Find("viewers") - 1
+'
+'   If sa.Find("global_mods") + 1 Not sa.Find("viewers") - 1 Then
+'     For i = k To m Step 1
+'
+'       If -1 = GlobalDatas.FindViewerByName(sa[i]) Then
+'         v = New Viewer(sa[i], True, 0, 0)
+'         GlobalDatas.AllViewerList.Add(v)
+'       Else
+'         v = GlobalDatas.AllViewerList[GlobalDatas.FindViewerByName(sa[i])]
+'       Endif
+'       If Not GlobalDatas.AddCleverModsToList(sa[i]) Then GlobalDatas.Modlist.Add(v)
+'       GlobalDatas.ActivViewerList.Add(v)
+'     Next
+'   Endif
+'
+'   k = sa.Find("viewers") + 1
+'   m = sa.Length - 1
+'   If sa.Find("viewers") + 1 Not sa.Length - 1 Then
+'
+'     For i = k To m Step 1
+'
+'       If -1 = GlobalDatas.FindViewerByName(sa[i]) Then
+'         v = New Viewer(sa[i], True, 0, 0)
+'         GlobalDatas.AllViewerList.Add(v)
+'       Else
+'         v = GlobalDatas.AllViewerList[GlobalDatas.FindViewerByName(sa[i])]
+'       Endif
+'       GlobalDatas.ActivViewerList.Add(v)
+'     Next
+'   Endif
+'   Print True
+'
+' End
+'
+' Public Sub LoadViwerlist()
+'
+'   Dim xml As New XmlDocument
+'   Dim Xmlergebnis As XmlElement[]
+'   Dim x As XmlElement
+'   Dim c As Viewer
+'
+'   If Exist(user.home & "/.bisabot/data/user/viewer.xml") Then
+'     xml.Open(user.home & "/.bisabot/data/user/viewer.xml")
+'     Main.Gesamtlog.Print("Loading Viewer Stats...")
+'
+'     Xmlergebnis = xml.GetElementsByNamespace("viewer")[0].ChildElements
+'     For Each x In Xmlergebnis
+'
+'       c = New Viewer(x.Attributes["userName"], CBool(x.Attributes["Ausgabe"]), CInt(x.Attributes["points"]), CLong(x.Attributes["minutes"]))
+'       Main.Gesamtlog.Print("Loading Viewer Stat " & x.Attributes["userName"] & " ✔")
+'       GlobalDatas.AllViewerList.Add(c)
+'
+'     Next
+'
+'     Main.Gesamtlog.Print("Finish Loading Viewer Stats ✔")
+'
+'   Endif
+'
+' End

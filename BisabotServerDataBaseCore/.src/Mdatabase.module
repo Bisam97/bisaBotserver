@@ -1,0 +1,207 @@
+' Gambas module file
+
+''========================Private-Var================================
+Private LibCauData As New Connection 'Lib Command and User Data
+Private $table As Table
+Const Version As Integer = 2
+Private Gesamtlog As Loger
+
+''========================Public-Var================================
+Public Tracestack As String
+
+Public Sub initDatabase(Channel As String)
+
+  With LibCauData
+    .Type = "sqlite3"
+    .Host = User.home & "/.bisabot/data/"
+    .Name = ""
+    .Login = ""
+    .Password = ""
+  End With
+  LibCauData.Open()
+  If Not LibCauData.Databases.Exist(String.LCase(Channel) & ".db") Then
+    LibCauData.Databases.Add(String.LCase(Channel) & ".db")
+    LibCauData.Close
+    LibCauData.Name = String.LCase(Channel) & ".db"
+    LibCauData.Open
+    $table = LibCauData.Tables.Add("User")
+    $table.Fields.Add("Name", db.String)
+    $table.Fields.Add("Time", db.Long)
+    $table.Fields.Add("Points", db.Long)
+    $table.Fields.Add("isMod", db.Boolean)
+    $table.PrimaryKey = ["Name"]
+    $table.Update
+    $table = Null
+    $table = LibCauData.Tables.Add("Commands")
+    $table.Fields.Add("inde", db.Integer)
+    $table.Fields.Add("Name", db.String)
+    $table.Fields.Add("jsonOut", db.String)
+    $table.Fields.Add("Auth", db.Integer)
+    $table.Fields.Add("Syntax", db.String)
+    $table.PrimaryKey = ["inde"]
+    $table.Update
+    $table = Null
+    With LibCauData.Tables.Add("Version")
+      .Fields.Add("Version", db.Integer)
+      .PrimaryKey = ["Version"]
+      .Update()
+    End With
+    With LibCauData.Create("Version")
+      !Version = Version
+      .Update()
+    End With
+
+  Endif
+  LibCauData.Close
+  LibCauData.Name = String.LCase(Channel) & ".db"
+  LibCauData.Open()
+  If LibCauData.Exec("Select * From Version Order By Version Desc")!Version > Version Then Error.Raise("Pls Update the Progamm")
+  If LibCauData.Exec("Select * From Version Order By Version Desc")!Version < Version Then
+    LibCauData.Tables.Refresh()
+    $table = LibCauData.Tables["User"]
+    If Not $table.Fields.Exist("Name") Then LibCauData.Exec("ALTER TABLE Commands ADD `Name` TEXT")
+    If Not $table.Fields.Exist("Time") Then LibCauData.Exec("ALTER TABLE Commands ADD `Time` BIGINT")
+    If Not $table.Fields.Exist("Points") Then LibCauData.Exec("ALTER TABLE Commands ADD `Points` BIGINT")
+    If Not $table.Fields.Exist("isMod") Then LibCauData.Exec("ALTER TABLE Commands ADD `isMod` BOOL")
+    $table = Null
+    $table = LibCauData.Tables["Commands"]
+    If Not $table.Fields.Exist("inde") Then LibCauData.Exec("ALTER TABLE Commands ADD `inde` int4")
+    If Not $table.Fields.Exist("Name") Then LibCauData.Exec("ALTER TABLE Commands ADD `Name` TEXT")
+    If Not $table.Fields.Exist("jsonOut") Then LibCauData.Exec("ALTER TABLE Commands ADD `jsonOut` TEXT")
+    If Not $table.Fields.Exist("Auth") Then LibCauData.Exec("ALTER TABLE Commands ADD `Auth` TEXT")
+    If Not $table.Fields.Exist("Syntax") Then LibCauData.Exec("ALTER TABLE Commands ADD `Syntax` TEXT")
+    $table = Null
+    LibCauData.Exec("Delete From Version")
+    With LibCauData.Create("Version")
+      !Version = Version
+      .Update()
+    End With
+  Endif
+  LibCauData.Close()
+  Loaddata()
+Catch
+
+  Tracestack = Main.StringAr2String(Error.Backtrace)
+  Main.Glog.addError(Error.Text & " | " & Tracestack & " | " & Error.Code)
+  Main.Glog.Print("[Warnig] These errors Terminates all programs with the server core works and the server core also")
+  Main.GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub Loaddata() As Command[]
+
+  Dim r As Result
+  Dim c As New Command[]
+  Dim u As New Users[]
+  Dim res As Result
+  Dim tu As Users
+  Dim tc As Command
+
+  LibCauData.Open()
+  If LibCauData.Find("User", "Order by Name").Count > 0 Then
+    r = LibCauData.Find("User")
+    For Each r
+      tu = New Users(r!Name, CLong(r!Time), CLong(r!Points), CBool(r!isMod))
+      Print "fertig"
+      u.Add(tu)
+    Next
+  Endif
+
+  If LibCauData.Find("Commands", "Order by inde").Count > 0 Then
+    r = LibCauData.Find("Commands", "Order by inde")
+    For Each r
+      tc = New Command(r!Name, JSON.Decode(r!jsonOut), CInt(r!Auth), r!Syntax)
+      c.Add(tc)
+    Next
+  Endif
+
+  AllCommandtoXML(c)
+  AllUserToXML(u)
+  Main.toCore("-loadCCP")
+
+End
+
+Private Sub AllCommandtoXML(Co As Command[])
+
+  Dim xmlFile As New XmlWriter
+  Dim c As Command
+  Dim a As String[]
+
+  xmlFile.Open("/tmp/" & Main.PID & "/c.xml", True, "UTF-8")
+  xmlFile.StartElement("Commands")
+  For Each C In Co
+    a = C.ToString()
+
+    xmlFile.StartElement(Right$(C.CommandName, -1), a)
+    xmlFile.EndElement()
+    Main.Gesamtlog.Print("Command " & C.CommandName & " was export successful ✔")
+
+  Next
+  xmlFile.EndElement()
+  xmlFile.Comment("This File was automatically generated from Programm \"BisaBot_server\"")
+  xmlFile.Comment("EoF of this XML File")
+  xmlFile.EndDocument()
+
+End
+
+Private Sub AllUserToXML(Co As Users[])
+
+  Dim xmlFile As New XmlWriter
+  Dim c As Users
+  Dim a As String[]
+
+  xmlFile.Open("/tmp/" & Main.PID & "/u.xml", True, "UTF-8")
+  xmlFile.StartElement("User")
+  For Each C In Co
+    a = C.ToString()
+
+    xmlFile.StartElement(C.Name, a)
+    xmlFile.EndElement()
+    Main.Gesamtlog.Print("User " & C.Name & " was export successful ✔")
+
+  Next
+  xmlFile.EndElement()
+  xmlFile.Comment("This File was automatically generated from Programm \"BisaBot_server\"")
+  xmlFile.Comment("EoF of this XML File")
+  xmlFile.EndDocument()
+
+End
+
+Public Sub SaveData()
+
+End
+
+Private Sub SaveCommands()
+
+  Dim xml As New XmlDocument
+  Dim Xmlergebnis As XmlElement[]
+  Dim x As XmlElement
+  Dim c As Command
+  Dim Co As New Command[]
+  Dim SaveCommands As New Command[]
+  Dim s As Command
+  Dim Final As New Command[]
+
+  xml.Open(user.home & "/.bisabot/Commands/botCommands.xml")
+  Main.Gesamtlog.Print("Loading Commands...")
+
+  Xmlergebnis = xml.GetElementsByNamespace("Commands")[0].ChildElements
+  For Each x In Xmlergebnis
+
+    c = New Command(x.Attributes["CommandName"], x.Attributes["Ausgabe"], CInt(x.Attributes["Authorization"]), x.Attributes["Syntax"])
+    Main.Gesamtlog.Print("Loading Command " & x.Attributes["CommandName"] & " ✔")
+    SaveCommands.Add(c)
+
+  Next
+  Print "Now Saveing the Commands ...."
+
+  LibCauData.Open()
+  LibCauData.Delete("Commands")
+  For Each c In SaveCommands
+    LibCauData.Exec("Insert Into Commands (Name,jsonOut,Auth,Syntax) values(" & c.CommandName & JSON.Encode(c.Ausgabe) & c.Authorization & c.Syntax & ")")
+  Next
+
+  Main.Gesamtlog.Print("Finish Save Commands ✔")
+
+End

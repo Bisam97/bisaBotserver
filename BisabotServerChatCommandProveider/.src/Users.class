@@ -1,0 +1,72 @@
+' Gambas class file
+
+Property Name As String
+Property Time As Long
+Property Read isMod As Boolean
+Property points As Long
+
+Private $Name As String
+Private $Time As Long
+Private $isMod As Boolean
+Private $points As Long
+
+Public Sub _new(Name As String, Optional Timee As Long, Optional Points As Long, Optional isMod As Boolean)
+
+  $Name = Name
+  $Time = Timee
+  $points = Points
+  $isMod = isMod
+
+End
+
+Private Function Name_Read() As String
+
+  Return $Name
+
+End
+
+Private Sub Name_Write(Value As String)
+
+End
+
+Private Function Time_Read() As Long
+
+  Return $Time
+
+End
+
+Private Sub Time_Write(Value As Long)
+
+End
+
+Private Function isMod_Read() As Boolean
+
+  Return $isMod
+
+End
+
+Private Function points_Read() As Long
+
+  Return $points
+
+End
+
+Private Sub points_Write(Value As Long)
+
+End
+
+Public Sub ToString() As String[]
+
+  Dim a As New String[]
+
+  a.Add("Name")
+  a.Add(Me.Name)
+  a.Add("Time")
+  a.Add(Me.Time)
+  a.Add("Points")
+  a.Add(Me.points)
+  a.Add("isMod")
+  a.Add(Me.isMod)
+  Return a
+
+End

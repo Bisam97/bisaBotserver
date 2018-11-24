@@ -1,0 +1,24 @@
+' Gambas module file
+
+Public Sub saveConfig()
+
+  Dim xmlw As New XmlWriter
+
+  xmlw.Open(User.Home & "/.bisabot/data/config.xml")
+  xmlw.StartElement("config")
+  xmlw.StartElement("bisabot_Config")
+
+  xmlw.Attribute("botOauth", GlobalDatas.botOauth)
+  xmlw.Attribute("botName", GlobalDatas.botName)
+  xmlw.Attribute("Login", GlobalDatas.Login)  'Login Name for the Authorization on this Bot "#default"= No Login
+  xmlw.Attribute("pw", GlobalDatas.pw) ''no the Orginal PW only The Hash of the PW "#default" = No PW
+  xmlw.Attribute("Pointsadder", CStr(GlobalDatas.adder)) 'The Point Adder per Minute
+  xmlw.Attribute("version", CStr(Application.Version))
+
+  xmlw.EndElement
+  xmlw.EndElement()
+  xmlw.Comment("This File was automatically generated from Programm \"BisaBot_server\"")
+  xmlw.Comment("EoF of this XML File")
+  xmlw.EndDocument()
+
+End

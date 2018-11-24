@@ -1,0 +1,97 @@
+' Gambas class file
+
+'- - - - - - - - - - - - - - - - Proberty - - - - - - - - - - - - - - - - -
+Property logfile As File
+Property Read ID As String
+Property Read Path As String
+Property Read Error As String[]
+
+'- - - - - - - - - - - Veriabeln - - - - - - - - - - - -
+Private $logfile As File
+Private $ID As String
+Private $ERROR As String[]
+Private $Path As String
+
+Public Sub _new(DirPath As String, Optional IDExtention As String, Optional ID As String)
+
+  If ID = False Then
+    $ID = CString(Day(Now) & Month(Now) & Year(Now) & Hour(Now) & Minute(Now))
+  Else
+    $ID = ID
+  Endif
+  $ID &= IDExtention
+
+  $Path = DirPath & "/" & Me.ID & ".log"
+
+  Me.logfile = Open Me.Path For Write Create
+  Me.logfile.Close()
+  Me.Print("-----------------------------------Start-Log-------------------------------------------")
+  $ERROR = New String[]
+
+End
+
+Private Function logfile_Read() As File
+
+  Return $logfile
+
+End
+
+Private Sub logfile_Write(Value As File)
+
+  $logfile = Value
+
+End
+
+Private Function ID_Read() As String
+
+  Return $ID
+
+End
+
+Public Sub Print(msg As String)
+
+  Print msg
+  msg &= "\r\n"
+  Me.logfile = Open Me.Path For Read Write Append
+  Write #Me.logfile, msg, String.Len(msg)
+  Me.logfile.Close()
+  Me.logfile = Null
+
+End
+
+Public Sub addError(msg As String)
+
+  $ERROR.Add(CStr(Hour(Now) & ":" & Minute(Now) & " ") & msg)
+  Me.Print("----------ERROR-------------\n 1 Error was addet to the Error log at the End of this File wen this Programm Close\n This is Error " & CString($ERROR.Length) & "\n-------------ERROR-END---------------")
+
+End
+
+Public Sub ErrorPrinter()
+
+  Dim s As String
+  Dim i As Integer = 1
+
+  Me.Print("\n\n---------------------------------Normal-Log-End----------------------------------------")
+  Me.Print("\n \n \n")
+  Me.Print("-----------------------------------Error-Log-------------------------------------------")
+
+  For Each s In $ERROR
+    Print("\n" & CStr(i) & ":   " & s & "\n")
+    i += 1
+  Next
+
+  Me.Print("------------------------------------End-Log--------------------------------------------")
+
+End
+
+Private Function Path_Read() As String
+
+  Return $Path
+
+End
+
+Private Function Error_Read() As String[]
+
+  Return $ERROR
+
+End
