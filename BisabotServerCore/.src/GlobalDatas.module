@@ -1,0 +1,10 @@
+' Gambas module file
+
+Public adder As Integer = 0
+Public botOauth As String = "#default"
+Public botName As String = "#default"
+Public Login As String = "#default"
+Public pw As String = "#default"
+Public Keys As String[]
+Public iniVactor As String[]
+Public CryptMethode As String

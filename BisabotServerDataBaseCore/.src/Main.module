@@ -1,0 +1,119 @@
+' Gambas module file
+
+Private Logdir As String = User.home & "/.bisabot/logs/"
+
+Public GLog As Loger
+
+Public PID As String
+Private ID As String
+Private Core As Socket
+Private Channel As String
+Public Gesamtlog As Loger
+
+Public Sub Main()
+
+  Args.Begin()
+  PID = Args.Get("p", "PID", "PID das Hostprozesses für die Server Connection")
+  ID = Args.Get("i", "LogID", "Log ID des Hostprozesses für die Log file Lagerung")
+  Channel = Args.Get("c", "Channel", "Name des Kannales um die Daten zu speichern")
+  Args.End()
+
+  Glog = New Loger(Logdir, "db", ID)
+  Gesamtlog = Glog
+
+  If PID = "" Then
+    Glog.Print("The PID Parameter is not Set --> Programm Terminated")
+    Quit
+  Endif
+  Glog.Print("Init Socket")
+  initCoreSocket()
+  GLog.Print("DB Core was Start with this Args: PID: " & PID & " LogfileID: " & ID & " Channel: " & Channel)
+  Glog.Print("Starting Connection to Bisabot Server Core.....")
+  Mdatabase.initDatabase(Channel)
+
+End
+
+Public Sub initCoreSocket()
+
+  Core = New Socket As "bcore"
+  Core.Path = "/tmp/" & PID & "/db"
+  Core.Connect("/tmp/" & PID & "/db", 0)
+
+End
+
+Public Sub bcore_Error()
+
+  Dim Tracestack As String
+
+  Tracestack = StringAr2String(Error.Backtrace)
+  Glog.addError(Error.Text & " | " & Tracestack & " | " & Error.Code)
+  Glog.Print("[Warnig] These errors Terminates all programs with the server core works and the server core also")
+  GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub StringAr2String(a As String[]) As String
+
+  Dim s As String
+  Dim r As String
+
+  If a = Null Then
+    Return r
+  Else
+    For Each s In a
+      r &= s & " "
+    Next
+    Return r
+  Endif
+
+End
+
+Public Sub bcore_Read()
+
+  Dim s As String
+
+  s = Core.ReadLine()
+
+  Glog.Print("[" & Time & "] Core ----> db   " & s)
+
+  Select Split(s, " ")[0]
+    Case "exit" ' Normal Exit String
+      shutdown()
+    Case "load"
+      Mdatabase.initDatabase(Channel)
+    Case "save"
+
+  End Select
+
+End
+
+Public Sub shutdown()
+
+  GLog.Print("The DB Core will Shutdown")
+  toCore("initShutdownFinish")
+  Wait 3
+  Core.Close()
+  Glog.Print("The DB Core is Shutdown")
+  GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub toCore(msg As String)
+
+  msg &= "\n"
+  Core.Begin()
+  Glog.Print("[" & Time & "] db ----> Core   " & msg)
+  Write #Core, msg, Len(msg)
+  Core.Send()
+
+End
+
+Public Sub LoadCommands()
+
+  Mdatabase.Loaddata()
+
+End
+
+'

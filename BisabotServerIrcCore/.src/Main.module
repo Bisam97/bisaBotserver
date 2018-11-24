@@ -1,0 +1,180 @@
+' Gambas module file
+
+Private Logdir As String = User.home & "/.bisabot/logs/"
+
+Public GLog As Loger
+Public MySock As New Socket As "Chat"
+
+Private PID As String
+Private ID As String
+Private Nick As String
+Private token As String
+Private Core As Socket
+Private Channel As String
+
+Public Sub Main()
+
+  Args.Begin()
+  PID = Args.Get("p", "PID", "PID das Hostprozesses für die Server Connection")
+  ID = Args.Get("i", "LogID", "Log ID des Hostprozesses für die Log file Lagerung")
+  Channel = Args.Get("c", "Channel", "The Twitch Chat how join the Bot")
+  Args.End()
+
+  Glog = New Loger(Logdir, "irc", ID)
+
+  If PID = "" Then
+    Glog.Print("The PID Parameter is not Set --> Programm Terminated")
+    Quit
+  Endif
+  initCoreSocket()
+  GLog.Print("IRC Core was Start with this Args: PID: " & PID & " LogfileID: " & ID & " Channel: " & Channel)
+  Glog.Print("Starting Connection to Bisabot Server Core.....")
+
+End
+
+Public Sub initCoreSocket()
+
+  Core = New Socket As "bcore"
+  Core.Path = "/tmp/" & PID & "/irc"
+  Core.Connect("/tmp/" & PID & "/irc", 0)
+
+End
+
+Public Sub bcore_Error()
+
+  Dim Tracestack As String
+
+  Tracestack = StringAr2String(Error.Backtrace)
+  Glog.addError(Error.Text & " | " & Tracestack & " | " & Error.Code)
+  Glog.Print("[Warnig] These errors Terminates all programs with the server core works and the server core also")
+  GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub StringAr2String(a As String[]) As String
+
+  Dim s As String
+  Dim r As String
+
+  If a = Null Then
+    Return r
+  Else
+    For Each s In a
+      r &= s & " "
+    Next
+    Return r
+  Endif
+
+End
+
+Public Sub bcore_Read()
+
+  Dim s As String
+
+  s = Core.ReadLine()
+
+  Select Split(s, " ")[0]
+    Case "-n" ' Twitch Botname
+      Nick = Split(s, " ")[1]
+    Case "-t" ' Twitch API Token
+      token = Split(s, " ")[1]
+    Case "-s" ' Start Verbindung
+      initTwitchChat()
+    Case "exit" ' Normal Exit String
+      shutdown()
+    Case "-say" ' Normal Print in Chat
+      Botsay(Split(s, " "))
+  End Select
+  Glog.Print(s)
+
+End
+
+Public Sub Chat_Read()
+
+  Dim s As String
+  Dim NameText As String[]
+  Dim stmop As String
+  Dim ssend As String
+  Dim Sender As String
+  Dim Command As String[]
+  Dim c_Text As String
+  Dim Tracestack As String
+
+  Read #MySock, s, Lof(MySock)
+
+  NameText = Split(s, "!", "@", False, True)
+  Glog.Print(NameText[1])
+  stmop = Split(NameText[0], ":", " ", True)[0] & " : " & Split(NameText[1], " ", ":", True)[3]
+  Glog.Print(stmop)
+
+  '- - - - - - - - - - - - - - - - - - Spliten - - - - - - - - - - - - - - - - - - - - - -
+
+  NameText = Split(s, "!", "@", False, True)
+  ssend = Split(Split(NameText[1], " ", ":", True)[3], "\r")[0]
+  Sender = Split(stmop, ":")[0]
+  Command = Split(ssend, " ")
+  c_Text = Command[0]
+
+  Glog.Print("Twitch --> " & Sender & ": " & StringAr2String(Command))
+
+  If Left(c_Text) = "!" Then toCore("-input " & Sender & " " & StringAr2String(Command))
+
+Catch
+  GLog.Print(s)
+  Tracestack = StringAr2String(Error.Backtrace)
+  Glog.addError(Error.Text & " | " & Tracestack & " | " & Error.Code)
+
+End
+
+Public Sub Chat_Error()
+
+  Dim Tracestack As String
+
+  Tracestack = StringAr2String(Error.Backtrace)
+  Glog.addError(Error.Text & " | " & Tracestack & " | " & Error.Code)
+
+End
+
+Public Sub initTwitchChat()
+
+  irc.Irc_Twitch_Join(Nick, token, Channel)
+  toCore("Erfolgreich Verbunden zum Twitch Chat, auf den Kannal " & Channel)
+
+End
+
+Public Sub Botsay(data As String[])
+
+  Dim s As String
+  Dim t As String
+
+  data.Remove(0)
+  For Each s In data
+    t &= s & " "
+  Next
+  irc.irc_send_Message(t, Channel)
+
+End
+
+Public Sub shutdown()
+
+  GLog.Print("The IRC Core will Shutdown")
+  MySock.Close()
+  toCore("initShutdownFinish")
+  Wait 3
+  Core.Close()
+  Glog.Print("The IRC Core is Shutdown")
+  GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub toCore(msg As String)
+
+  msg &= "\n"
+  Core.Begin()
+  Glog.Print("[" & Time & "] irc ----> Core   " & msg)
+  Write #Core, msg, Len(msg)
+  Core.Send()
+
+End

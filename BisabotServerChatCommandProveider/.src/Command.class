@@ -1,0 +1,93 @@
+' Gambas class file
+
+' $msg
+' $rmd
+'
+
+'- - - - - - - - - - - - - - - - Proberty - - - - - - - - - - - - - - - - -
+Property CommandName As String
+Property Ausgabe As String
+Property Read Syntax As String
+Property Read Syntaxa As String[]
+Property Read Authorization As Integer
+
+'- - - - - - - - - - - Veriabeln - - - - - - - - - - - -
+Private $CommandName As String
+Private $Ausgabe As String
+Private $Authorization As Integer
+Private $Syntax As String[]
+
+Public Sub _new(CommandName As String, Ausgabe As String, Optional Authorization As Integer, Optional Syntax As String)
+
+  If InStr(CommandName, "!") = 0 Then CommandName = "!" & CommandName
+
+  If Syntax = Null Then
+
+    $Syntax &= "Syntax: " & CommandName
+
+  Endif
+
+  If Authorization = 0 Or Authorization = 1 Or Authorization = 2 Then
+  Else
+    Authorization = 0
+  Endif
+  $Syntax = Split(Syntax, " ")
+  $CommandName = CommandName
+  $Ausgabe = Ausgabe
+  $Authorization = Authorization
+
+End
+
+Private Function CommandName_Read() As String
+
+  Return $CommandName
+
+End
+
+Private Sub CommandName_Write(Value As String)
+
+  $CommandName = Value
+
+End
+
+Private Function Ausgabe_Read() As String
+
+  Return $Ausgabe
+
+End
+
+Private Sub Ausgabe_Write(Value As String)
+
+  $Ausgabe = Value
+
+End
+
+Public Sub ToString() As String[]
+
+  Dim a As New String[]
+
+  a.Add("CommandName")
+  a.Add(Me.CommandName)
+  a.Add("Ausgabe")
+  a.Add(Me.Ausgabe)
+  a.Add("Authorization")
+  a.Add(Me.Authorization)
+  a.Add("Syntax")
+  a.Add(Me.Syntax)
+  Return a
+
+End
+
+Private Function Syntax_Read() As String
+
+End
+
+Private Function Syntaxa_Read() As String[]
+
+End
+
+Private Function Authorization_Read() As Integer
+
+  Return $Authorization
+
+End

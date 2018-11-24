@@ -1,0 +1,190 @@
+' Gambas module file
+
+Private Logdir As String = User.home & "/.bisabot/logs/"
+
+Public GLog As Loger
+Public MySock As New Socket As "Chat"
+
+Private Commands As Command[]
+Private Userlist As Users[]
+Private PID As String
+Private ID As String
+Private Core As Socket
+
+Public Sub Main()
+
+  Dim u As String
+
+  Args.Begin()
+  PID = Args.Get("p", "PID", "PID das Hostprozesses für die Server Connection")
+  ID = Args.Get("i", "LogID", "Log ID des Hostprozesses für die Log file Lagerung")
+  u = Args.Get("u", "User", "Twitch Channel of the User (For Loading the Commands)")
+  Args.End()
+
+  Glog = New Loger(Logdir, ID, "ccp")
+
+  If PID = "" Then
+    Glog.Print("The PID Parameter is not Set --> Programm Terminated")
+    Quit
+  Endif
+  initCoreSocket()
+  GLog.Print("CCP Core was Start with this Args: PID: " & PID & " LogfileID: " & ID)
+  Glog.Print("Starting Connection to Bisabot Server Core.....")
+
+End
+
+Public Sub initCoreSocket()
+
+  Core = New Socket As "bcore"
+  Core.Path = "/tmp/" & PID & "/ccp"
+  Core.Connect("/tmp/" & PID & "/ccp", 0)
+
+End
+
+Public Sub bcore_Error()
+
+  Dim Tracestack As String
+
+  Tracestack = StringAr2String(Error.Backtrace)
+  Glog.addError(Error.Text & " | " & Tracestack & " | " & Error.Code)
+  Glog.Print("[Warnig] These errors Terminates all programs with the server core works and the server core also")
+  GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub StringAr2String(a As String[]) As String
+
+  Dim s As String
+  Dim r As String
+
+  If a = Null Then
+    Return r
+  Else
+    For Each s In a
+      r &= s & " "
+    Next
+    Return r
+  Endif
+
+End
+
+Public Sub bcore_Read()
+
+  Dim s As String
+
+  s = Core.ReadLine()
+
+  Glog.Print("[" & Time & "] Core ----> ccp   " & s)
+
+  Select Split(s, " ")[0]
+    Case "exit" ' Normal Exit String
+      shutdown()
+    Case "-cmd"
+      cmdAction(Split(s, " "))
+    Case "load"
+      LoadCommands()
+  End Select
+
+End
+
+Public Sub shutdown()
+
+  GLog.Print("The CCP Core will Shutdown")
+  MySock.Close()
+  toCore("initShutdownFinish")
+  Wait 3
+  Core.Close()
+  Glog.Print("The CCP Core is Shutdown")
+  GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub cmdAction(cmd As String[])
+
+  Dim c As Command
+  Dim u As Users
+
+  cmd.Remove(0)
+  cmd.Remove(0)
+  For Each u In Userlist
+    If cmd[0] = String.LCase(u.Name) Then Break
+  Next
+
+  If String.LCase(u.Name) = cmd[0] Then
+  Else
+    u = New Users(cmd[0])
+  Endif
+  For Each c In Commands
+
+    If c.CommandName = cmd[2] And If c.Authorization = 0 Then
+      toCore("IrcSay " & c.Ausgabe)
+
+    Else If c.Authorization > 0 And If u.isMod And If c.CommandName = cmd[2] Then
+      toCore("IrcSay " & c.Ausgabe)
+
+    Endif
+  Next
+
+End
+
+Public Sub toCore(msg As String)
+
+  msg &= "\n"
+  Core.Begin()
+  Glog.Print("[" & Time & "] ccp ----> Core   " & msg)
+  Write #Core, msg, Len(msg)
+  Core.Send()
+
+End
+
+Public Sub LoadCommands()
+
+  Dim xml As New XmlDocument
+  Dim Xmlergebnis As XmlElement[]
+  Dim x As XmlElement
+  Dim c As Command
+
+  xml.Open("/tmp/" & PID & "/c.xml")
+  Glog.Print("Loading Commands...")
+
+  Xmlergebnis = xml.GetElementsByNamespace("Commands")[0].ChildElements
+  Commands = New Command[]
+  For Each x In Xmlergebnis
+
+    c = New Command(x.Attributes["CommandName"], x.Attributes["Ausgabe"], x.Attributes["Authorization"], x.Attributes["Syntax"])
+    GLog.Print("Loading Command " & x.Attributes["CommandName"] & " ✔")
+    Commands.Add(c)
+
+  Next
+
+  GLog.Print("Finish Loading Commands ✔")
+  LoadUserlist()
+
+End
+
+Public Sub LoadUserlist()
+
+  Dim xml As New XmlDocument
+  Dim Xmlergebnis As XmlElement[]
+  Dim x As XmlElement
+  Dim c As Users
+
+  xml.Open("/tmp/" & PID & "/u.xml")
+  Glog.Print("Loading User...")
+
+  Xmlergebnis = xml.GetElementsByNamespace("User")[0].ChildElements
+  Userlist = New User[]
+  For Each x In Xmlergebnis
+
+    c = New Users(x.Attributes["Name"], x.Attributes["Time"], x.Attributes["Points"], CBool(x.Attributes["isMod"]))
+    GLog.Print("Loading User " & x.Attributes["Name"] & " ✔")
+    Userlist.Add(c)
+
+  Next
+
+  Glog.Print("Finish Loading User ✔")
+  toCore("finishedLoading")
+
+End

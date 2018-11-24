@@ -1,0 +1,19 @@
+# Gambas Project File 3.0
+# Compiled with Gambas 3.10.0
+Title=BisasamBot Server IRC
+Startup=Main
+Version=0.1.1
+Component=gb.args
+Component=gb.net
+Arguments=[["-p","32614","-i","xxxxxxxxxxxxxxxxx","-c","bisam97"]]
+CurrentArgument=1
+TabSize=2
+Translate=1
+Language=en_US
+Maintainer=bisam97
+Address=bisam97@bisam97.de
+Url=www.endoftheinternet.com
+License=General Public License
+PackageName=bisabotserverirccore-0.1.1
+Packager=1
+Systems=autotools

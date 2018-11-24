@@ -1,0 +1,131 @@
+' Gambas module file
+
+Private Logdir As String = User.home & "/.bisabot/logs/"
+
+Public GLog As Loger
+Public MySock As New Socket As "Chat"
+
+Private PID As String
+Private ID As String
+Private Core As Socket
+
+Public Sub Main()
+
+  Args.Begin()
+  PID = Args.Get("p", "PID", "PID das Hostprozesses für die Server Connection")
+  ID = Args.Get("i", "LogID", "Log ID des Hostprozesses für die Log file Lagerung")
+  Args.End()
+
+  Glog = New Loger(Logdir, "lcp", ID)
+
+  If PID = "" Then
+    Glog.Print("The PID Parameter is not Set --> Programm Terminated")
+    Quit
+  Endif
+  initCoreSocket()
+  GLog.Print("LCP Core was Start with this Args: PID: " & PID & " LogfileID: " & ID)
+  Glog.Print("Starting Connection to Bisabot Server Core.....")
+
+End
+
+Public Sub initCoreSocket()
+
+  Core = New Socket As "bcore"
+  Core.Path = "/tmp/" & PID & "/lcp"
+  Core.Connect("/tmp/" & PID & "/lcp", 0)
+
+End
+
+Public Sub bcore_Error()
+
+  Dim Tracestack As String
+
+  Tracestack = StringAr2String(Error.Backtrace)
+  Glog.addError(Error.Text & " | " & Tracestack & " | " & Error.Code)
+  Glog.Print("[Warnig] These errors Terminates all programs with the server core works and the server core also")
+  GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub StringAr2String(a As String[]) As String
+
+  Dim s As String
+  Dim r As String
+
+  If a = Null Then
+    Return r
+  Else
+    For Each s In a
+      r &= s & " "
+    Next
+    Return r
+  Endif
+
+End
+
+Public Sub bcore_Read()
+
+  Dim s As String
+
+  s = Core.ReadLine()
+
+  Glog.Print("[" & Time & "] Core ----> lcp   " & s)
+
+  Select Split(s, " ")[0]
+    Case "exit" ' Normal Exit String
+      shutdown()
+    Case "-cmd"
+      cmdAction(Split(s, " "))
+  End Select
+
+End
+
+Public Sub shutdown()
+
+  GLog.Print("The LCP Core will Shutdown")
+  MySock.Close()
+  toCore("initShutdownFinish")
+  Wait 3
+  Core.Close()
+  Glog.Print("The LCP Core is Shutdown")
+  GLog.ErrorPrinter()
+  Quit
+
+End
+
+Public Sub cmdAction(cmd As String[])
+
+  cmd.Remove(0)
+  Select cmd[0]
+    Case "START"
+      toCore("-start")
+    Case "STOP"
+      toCore("exit")
+    Case "TC"
+      cmd.Remove(0)
+      toCore("-say " & StringAr2String(cmd))
+    Case "CMD"
+      cmd.Remove(0)
+      Select cmd[0]
+        Case "add"
+          'addcmd(cmd)
+        Case "rm"
+          'dlcmd(cmd[1])
+        Case "edit"
+      End Select
+    Case "JOIN"
+      toCore("-rejoin " & cmd[1])
+  End Select
+
+End
+
+Public Sub toCore(msg As String)
+
+  msg &= "\n"
+  Core.Begin()
+  Glog.Print("[" & Time & "] lcp ----> Core   " & msg)
+  Write #Core, msg, Len(msg)
+  Core.Send()
+
+End

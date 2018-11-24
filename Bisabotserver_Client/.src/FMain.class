@@ -1,0 +1,273 @@
+' Gambas class file
+
+Public Sub Form_Open()
+
+  Set_Interface(False)
+  If Not Exist(User.Home & "/.bisaCient") Then Mkdir User.Home & "/.bisaCient"
+
+End
+
+Public Sub MySocket_Ready()
+  '***********************************
+  ' When connection proccess has finished
+  ' successfully, "Connected" event will raise
+  '***********************************
+
+  timTimeout.Enabled = False
+
+  sockMsg.Text = ("Connected to remote host ") & MySocket.Path
+  sockMsg.Text = sockMsg.Text & (" - Using local address : ") & MySocket.LocalHost & ":" & MySocket.LocalPort
+
+  Me.Enabled = True
+  Set_Interface(True)
+
+End
+
+Public Sub MySocket_Closed()
+  '********************************************
+  ' this event will raise when foreing host
+  ' closes the socket by any reason
+  '********************************************
+
+  sockMsg.Caption = ("Connection Closed by foreign host.")
+  Me.Enabled = True
+  Set_Interface(False)
+
+End
+
+Public Sub MySocket_Found()
+  '********************************************
+  ' this event will raise when foreing host
+  ' name has been translated to IP
+  '********************************************
+
+  sockMsg.Caption = ("Host Found. Connecting...")
+
+End
+
+Public Sub MySocket_Read()
+  '****************************************
+  ' When some data arrives from the remote
+  ' part of the socket, "DataAvailable" event
+  ' is raised
+  '****************************************
+
+  Dim S As String
+  Dim Splitbuf As String[]
+  Dim test As Boolean
+  Dim sBuf As String
+  Dim Keys As String[]
+  Dim IniVectors As String[]
+  Dim IKey As Integer
+  Dim IVector As Integer
+
+  If MySocket.Status = Net.Connected Then
+    Read #MySocket, S, Lof(MySocket)
+    Splitbuf = Split(s, "|")
+
+    If S = "/Clear\n\r" Then
+      textReceive.Text = ""
+
+    Else
+      textReceive.Pos = textReceive.Length
+      textReceive.Insert(S)
+    Endif
+
+    Select Splitbuf[0]
+
+      Case "~MSG"
+        If Splitbuf[1] = "[Error]" Then
+          Message.Error(Splitbuf[2], "ok")
+        Endif
+
+      Case "~support"
+        test = False
+        For Each s In Splitbuf
+
+          If Cipher.IsSupported(s) Then test = True
+          If test = True Then Break
+        Next
+        If test = True Then
+          File.Save(User.Home & "/.bisaCient/Crypt.dat", s)
+          sBuf = "~make " & s
+          Write #Last, sBuf, Len(sBuf)
+        Else
+          sBuf = "~notingOfThis"
+          Write #Last, sBuf, Len(sBuf)
+        Endif
+
+      Case "~keys"
+        Keys = Split(Splitbuf[1], "%", "", True)
+        IniVectors = Split(Splitbuf[2], "%", "", True)
+        Randomize
+        IKey = Rand(0, Keys.Length - 1)
+        IVector = Rand(0, IniVectors.Length - 1)
+
+        s = File.Load(User.Home & "/.bisaCient/Crypt.dat")
+
+        File.Save(User.Home & "/.bisaCient/Cryptf.dat", s & "|" & Keys[IKey] & "|" & IniVectors[IVector])
+        Print Keys[IKey]
+        Print IniVectors[IVector]
+        Print Len(Keys[IKey])
+        Print Len(IniVectors[IVector])
+
+        s = "~crypt|" & Cipher[s].Encrypt("Hallo Welt!", Keys[IKey], IniVectors[IVector]).Cipher
+        Print Base64(s)
+        Write #Last, s, Len(s)
+
+    End Select
+
+  Endif
+
+End
+
+Public Sub MySocket_Error()
+  '**********************************
+  ' this is the function to
+  ' handle Errors when trying
+  ' to read or write to the socket
+  '**********************************
+
+  Select Case MySocket.Status
+    Case Net.CannotCreateSocket
+      sockMsg.Text = ("The system does not allow to create a socket")
+    Case Net.HostNotFound
+      sockMsg.Text = ("Host not Found")
+    Case Net.ConnectionRefused
+      sockMsg.Text = ("Unable to Connect. Connection Refused")
+    Case Net.CannotRead
+      sockMsg.Text = ("Error Reading Data")
+    Case Net.CannotWrite
+      sockMsg.Text = ("Error Writing Data")
+  End Select
+  Set_Interface(False)
+
+End
+
+Private Sub Set_Interface(bState As Boolean)
+  '****************************************
+  ' An auxiliar method to enable/disable
+  ' controls in the formulary , when
+  ' connection is stablished or closed
+  '****************************************
+
+  butConnect.Enabled = Not bState
+  textHost.Enabled = Not bState
+  textPort.Enabled = Not bState
+  butClose.Enabled = bState
+  timTimeout.Enabled = bState
+  'TextArea1.Enabled=bState
+  butSend.Enabled = bState
+  textSend.Enabled = bState
+
+  If bState Then
+    textReceive.Text = ""
+    textReceive.SetFocus
+  Endif
+
+End
+
+Public Sub butConnect_Click()
+
+  '******************************************
+  ' To connect to remote host we call to
+  ' connectsocket method, passing Host Name
+  ' and port as arguments
+  '******************************************
+  Dim RetVal As Integer
+
+  butConnect.Enabled = False
+
+  ' Stablishing a TCP connection.
+  ' Here we use Host and
+  ' Port properties, we could also
+  ' do directly MySock.Connect(TextBox1.Text,VAL(TextBox2.Text))
+  MySocket.Host = textHost.Text
+  MySocket.Port = Val(textPort.Text)
+  MySocket.Connect()
+
+  If MySocket.Status > Net.Inactive Then
+
+    '**************************
+    ' TCP : connection in progress...
+    '**************************
+    butClose.Enabled = True
+    'ME.Enabled=FALSE
+    sockMsg.Text = ("Looking up host name...")
+    timTimeout.Delay = 10000 ' we'll wait a maximun time of  10 seconds
+    timTimeout.Enabled = True
+  End If
+
+End
+
+Public Sub timTimeout_Timer()
+
+  '***************************
+  ' timeout trying to connect
+  '***************************
+  Me.Enabled = True
+  timTimeout.Enabled = False
+  If MySocket.Status <> Net.Connected Then
+    Close MySocket
+    Set_Interface(False)
+    sockMsg.Text = ("Timeout trying to stablish connection")
+  End If
+
+End
+
+Public Sub butClose_Click()
+
+  '**********************************
+  ' Here we close the connection
+  ' to remote host
+  '**********************************
+  Close MySocket
+  Set_Interface(False)
+  sockMsg.Text = ("Connection closed by user")
+
+End
+
+Public Sub butSend_Click()
+  '****************************************************
+  ' Here we send data to the remote part of the socket.
+  ' We have to be sure that connection is active
+  '****************************************************
+
+  If MySocket.Status = Net.Connected Then
+    Write #MySocket, textSend.Text, Len(textSend.Text)
+    textSend.Text = ""
+  End If
+
+End
+
+Public Sub Form_Close()
+
+  '*********************
+  ' Close possible Stablished connections
+  '*********************
+  If MySocket.Status > 0 Then Close #MySocket
+
+End
+
+Public Sub textSend_KeyPress()
+
+  If Key.Code = Key.Return Then
+    Wait 1
+    butSend_Click()
+  Endif
+
+End
+
+Public Sub butStart_Click()
+
+  textSend.Text = "START"
+  butSend_Click()
+
+End
+
+Public Sub butStop_Click()
+
+  textSend.Text = "STOP"
+  butSend_Click()
+
+End
